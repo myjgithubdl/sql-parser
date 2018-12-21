@@ -13,7 +13,7 @@ public class Test {
     public static void main(String[] args) {
 
 
-        //String sql="select * from fact_air_cn fac where  dt>${dt} and area in (select DISTINCT  city from dim_area_cn where quality like ${quality} ) or area LIKE '${areaLike}'  and id in (${idIn})   ";
+        //String sql="select  * from fact_air_cn fac where  dt>${dt} and area in (select DISTINCT  city from dim_area_cn where quality like ${quality} ) or area LIKE '${areaLike}'  and id in (${idIn})   ";
         //String sql = "select * from fact_air_cn fac where  dt>${dt} and  id in (${idIn})  or a like ${like}  ";
         //String sql = "select * from rpt_old_cus_apply_d where apply_dt between ${startTime} and ${endTime} ";
         //String sql = "select * from  bi_app_activate_apply_d where s_dt between ${startTime} and ${endTime} limit 10";
