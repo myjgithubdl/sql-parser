@@ -22,7 +22,7 @@ public class SQLConstant {
     /**
      * 将含有PARAMS_NO_VALUE_FLAG值的表达式替换为1=1
      */
-    public static final String SQL_NO_VALUE_EXPRESSION_REPLACE_FLAG = "1=1";
+    public static final String SQL_NO_VALUE_EXPRESSION_REPLACE_FLAG = " 1=1 ";
 
 
     /**

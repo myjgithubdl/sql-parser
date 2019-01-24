@@ -19,11 +19,11 @@ public class SQLConditionHandle {
      */
     public static String deleteSQLEmptyFlagCondition(String sql, List<Expression> expressionList) {
 
-        System.out.println("表达式列表：" + expressionList);
-
         for (Expression expression : expressionList) {
             if (expression.toString().contains(SQLConstant.PARAMS_NO_VALUE_FLAG)) {
-                sql = sql.replace(expression.toString(), SQLConstant.SQL_NO_VALUE_EXPRESSION_REPLACE_FLAG);
+                //需在条件前加空格，否则sql中有id=SQLConstant.PARAMS_NO_VALUE_FLAG  and user_id=SQLConstant.PARAMS_NO_VALUE_FLAG会变成
+                //1=1  and user_1=1
+                sql = sql.replace(" " + expression.toString(), " " + SQLConstant.SQL_NO_VALUE_EXPRESSION_REPLACE_FLAG);
             }
         }
         //替换1=1标志
