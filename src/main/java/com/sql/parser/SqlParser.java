@@ -22,7 +22,7 @@ public class SqlParser {
      * @param sql
      * @return
      */
-    public static String deleteEmotyValueCondition(String sql) throws JSQLParserException {
+    public static String deleteEmptyValueCondition(String sql) throws JSQLParserException {
         List<Expression> expressionList = new ArrayList<>();
         Statement statement = CCJSqlParserUtil.parse(sql);
         if (statement instanceof Select) {
@@ -32,7 +32,6 @@ public class SqlParser {
         }
         String realSql = statement.toString();
         String finalSQL = SQLConditionHandle.deleteSQLEmptyFlagCondition(realSql, expressionList);
-        finalSQL = finalSQL.trim();
         return finalSQL;
     }
 
@@ -64,7 +63,6 @@ public class SqlParser {
                     SubJoin subJoin = (SubJoin) fromItem;
                     List<Join> joins = subJoin.getJoinList();
                     parseJoinExpression(joins, expressionList);
-
                 }
             }
 
@@ -73,6 +71,14 @@ public class SqlParser {
                 List<Join> joins = plainSelect.getJoins();
                 parseJoinExpression(joins, expressionList);
             }
+        }else if(selectBody instanceof SetOperationList){
+            List<SelectBody> selectBodyList = ((SetOperationList) selectBody).getSelects();
+            for(SelectBody selectBody1 : selectBodyList){
+                parseSelectExpression(selectBody1, expressionList);
+            }
+
+        }else {
+
         }
     }
 

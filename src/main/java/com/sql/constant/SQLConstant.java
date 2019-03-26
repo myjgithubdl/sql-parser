@@ -30,7 +30,7 @@ public class SQLConstant {
      * <p>
      * "1=1" 不能使用
      */
-    public static final String[] SQL_EXPRESSION_DELETE_FLAG = {"AND 1=1", "OR 1=1"};
+    public static final String[] SQL_EXPRESSION_DELETE_FLAG = {"AND  1=1","AND 1=1", "OR 1=1","OR  1=1"};
 
 
     /**

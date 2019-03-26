@@ -18,8 +18,10 @@ public class SQLUtil {
             return null;
         }
 
+        //使用正则表达式替换参数
         String sqlEp = ParamsUtil.replaceAllParams(sql, paramsValueMap, SQLConstant.PARAMS_NO_VALUE_FLAG);
-        String finalSQL = SqlParser.deleteEmotyValueCondition(sqlEp);
+        //处理SQL
+        String finalSQL = SqlParser.deleteEmptyValueCondition(sqlEp);
 
         return finalSQL;
 
