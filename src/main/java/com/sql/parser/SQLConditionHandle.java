@@ -32,14 +32,15 @@ public class SQLConditionHandle {
             sql = sql.replaceAll(s, "");
         }
 
+        sql = sql.trim();
         //替换所有多余的空格
         /*while (sql.indexOf("  ") != -1) {
             sql = sql.trim().replaceAll("  ", " ");
         }*/
 
         //检查是不是 where SQL_NO_VALUE_EXPRESSION_REPLACE_FLAG  结尾  是就删除
-        if (sql.endsWith("WHERE " + SQLConstant.SQL_NO_VALUE_EXPRESSION_REPLACE_FLAG)) {
-            sql = sql.replace("WHERE " + SQLConstant.SQL_NO_VALUE_EXPRESSION_REPLACE_FLAG, "");
+        if (sql.endsWith(("WHERE " + SQLConstant.SQL_NO_VALUE_EXPRESSION_REPLACE_FLAG).trim())) {
+            sql = sql.replace(("WHERE " + SQLConstant.SQL_NO_VALUE_EXPRESSION_REPLACE_FLAG).trim(), "");
         }
 
         //替换
@@ -49,15 +50,6 @@ public class SQLConditionHandle {
 
         //将SQLConstant.PARAMS_NO_VALUE_FLAG替换为空字符串
         sql = sql.replace(SQLConstant.PARAMS_NO_VALUE_FLAG, "").trim();
-
-        //查询条件没有时删除WHERE 1=1
-        if(sql.endsWith("WHERE 1=1")){
-            sql=sql.substring(0,sql.length()-9).trim();
-        }
-
-        if(sql.endsWith("WHERE 1 = 1")){
-            sql=sql.substring(0,sql.length()-9).trim();
-        }
 
         return sql;
     }

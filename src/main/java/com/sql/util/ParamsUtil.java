@@ -20,9 +20,10 @@ public class ParamsUtil {
      *
      * @param str
      * @param isContainRegExp：是否包含正则表达式匹配开始和结束字符内容
+     * @param isDistinct 是否去重
      * @return
      */
-    public static List<String> findAllParams(String str, boolean isContainRegExp) {
+    public static List<String> findAllParams(String str, boolean isContainRegExp , boolean isDistinct) {
         if (str == null) {
             return null;
         }
@@ -32,10 +33,20 @@ public class ParamsUtil {
             Pattern pattern = Pattern.compile(s, Pattern.DOTALL);
             Matcher matcher = pattern.matcher(str);
             while (matcher.find()) {
-                if (isContainRegExp) {
-                    params.add(str.substring(matcher.start(), matcher.end()));
+                String val=null;
+                if (isContainRegExp) {//包涵正则表达式
+                    String regVal = str.substring(matcher.start(), matcher.end());
+                    //params.add(regVal);
+                    val=regVal;
                 } else {
-                    params.add(matcher.group(1));
+                    //params.add(matcher.group(1));
+                    val=matcher.group(1);
+                }
+
+                if(isDistinct && params.indexOf(val) < 0){
+                    params.add(val);
+                }else{
+                    params.add(val);
                 }
             }
         }
@@ -54,11 +65,11 @@ public class ParamsUtil {
      * @param noValReplaceStr 在paramsValueMap中没有str中的参数对应的值的代替字符
      * @return
      */
-    public static String replaceAllParams(String str, Map<String, Object> paramsValueMap , String noValReplaceStr) {
+    public static String replaceAllParams(String str, Map<String, Object> paramsValueMap, String noValReplaceStr) {
         if (str == null) {
             return null;
         }
-        List<String> allParamsExp = findAllParams(str, true);
+        List<String> allParamsExp = findAllParams(str, true,false);
         if (allParamsExp != null) {
             if (paramsValueMap == null) {
                 paramsValueMap = new HashMap<>();
@@ -68,9 +79,9 @@ public class ParamsUtil {
                 Object v = paramsValueMap.get(paramsName);
                 if (v != null) {
                     str = str.replace(paramsExp, String.valueOf(v));
-                } else if(noValReplaceStr != null ) {
+                } else if (noValReplaceStr != null) {
                     str = str.replace(paramsExp, noValReplaceStr);
-                }else{
+                } else {
                     str = str.replace(paramsExp, "");
                 }
             }
@@ -80,6 +91,7 @@ public class ParamsUtil {
 
 
     public static void main(String[] args) {
+
         String s = "https://www.baidu.com/s?wd='${name}'&rsv_spt=#{id}${1234}#{ttt}'";
         Map<String, Object> params = new HashMap<>();
         params.put("name", "缪应江");
@@ -87,8 +99,8 @@ public class ParamsUtil {
         params.put("1234", "AA");
         params.put("ttt", "BB");
 
-        List<String> list = findAllParams(s, true);
-        String v = replaceAllParams(s, params,"");
+        List<String> list = findAllParams(s, true,false);
+        String v = replaceAllParams(s, params, "");
         System.out.println(list);
         System.out.println(v);
     }

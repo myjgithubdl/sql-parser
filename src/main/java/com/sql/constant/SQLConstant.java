@@ -12,6 +12,11 @@ public class SQLConstant {
      */
     public static final String[] REG_PARAMS_PATTERN = {"\\$\\{(.*?)\\}", "\\#\\{(.*?)\\}"};
 
+    /**
+     * 顺序需与上面的保持一致，只是加了一个单引号
+     */
+    public static final String[] SINGLE_QUOTE_MARK_REG_PARAMS_PATTERN = {"'\\$\\{(.*?)\\}'", "'\\#\\{(.*?)\\}'"};
+
 
     /**
      * 解析SQL参数替换时参数中没有值的代替标志
@@ -30,7 +35,9 @@ public class SQLConstant {
      * <p>
      * "1=1" 不能使用
      */
-    public static final String[] SQL_EXPRESSION_DELETE_FLAG = {"AND  1=1","AND 1=1", "OR 1=1","OR  1=1"};
+    public static final String[] SQL_EXPRESSION_DELETE_FLAG = {"AND  1=1", "AND 1=1", "OR 1=1", "OR  1=1"};
+
+    public static final String[] SQL_EXPRESSION_END_DELETE_FLAG = {"WHERE  1=1", "WHERE 1=1"};
 
 
     /**

@@ -10,9 +10,13 @@ import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.select.*;
+import net.sf.jsqlparser.util.deparser.ExpressionDeParser;
+import net.sf.jsqlparser.util.deparser.SelectDeParser;
+import net.sf.jsqlparser.util.deparser.StatementDeParser;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class SqlParser {
 
@@ -71,13 +75,13 @@ public class SqlParser {
                 List<Join> joins = plainSelect.getJoins();
                 parseJoinExpression(joins, expressionList);
             }
-        }else if(selectBody instanceof SetOperationList){
+        } else if (selectBody instanceof SetOperationList) {
             List<SelectBody> selectBodyList = ((SetOperationList) selectBody).getSelects();
-            for(SelectBody selectBody1 : selectBodyList){
+            for (SelectBody selectBody1 : selectBodyList) {
                 parseSelectExpression(selectBody1, expressionList);
             }
 
-        }else {
+        } else {
 
         }
     }
@@ -118,15 +122,15 @@ public class SqlParser {
             if (itemsList instanceof ExpressionList) {
                 expressionList.add(expression);
             } else if (itemsList instanceof MultiExpressionList) {
-                MultiExpressionList multiExpressionList= (MultiExpressionList) itemsList;
+                MultiExpressionList multiExpressionList = (MultiExpressionList) itemsList;
 
                 List<ExpressionList> exprList = multiExpressionList.getExprList();
 
-                for(ExpressionList expressionList1 : exprList){
+                for (ExpressionList expressionList1 : exprList) {
                     List<Expression> expressions = expressionList1.getExpressions();
 
-                    for(Expression expression1 : expressions){
-                        parseExpression(expression1 ,expressionList);
+                    for (Expression expression1 : expressions) {
+                        parseExpression(expression1, expressionList);
                     }
                 }
 
@@ -142,9 +146,9 @@ public class SqlParser {
 
             expressionList.add(expression);
 
-        }else if(expression instanceof Parenthesis){
-            Parenthesis parenthesis= (Parenthesis) expression;
-            parseExpression(parenthesis.getExpression() ,expressionList);
+        } else if (expression instanceof Parenthesis) {
+            Parenthesis parenthesis = (Parenthesis) expression;
+            parseExpression(parenthesis.getExpression(), expressionList);
         }
     }
 
@@ -172,6 +176,23 @@ public class SqlParser {
                 parseExpression(onExpression, expressionList);
             }
         }
+    }
+
+
+    public static String replactSqlParams(String sql, Map<String, Object> paramsValueMap) throws JSQLParserException {
+        StringBuilder buffer = new StringBuilder();
+        ExpressionDeParser expr = new ReplaceColumnValues();
+
+
+        SelectDeParser selectDeparser = new SelectDeParser(expr, buffer);
+        expr.setSelectVisitor(selectDeparser);
+        expr.setBuffer(buffer);
+        StatementDeParser stmtDeparser = new StatementDeParser(expr, selectDeparser, buffer);
+
+        Statement stmt = CCJSqlParserUtil.parse(sql);
+
+        stmt.accept(stmtDeparser);
+        return stmtDeparser.getBuffer().toString();
     }
 
 
