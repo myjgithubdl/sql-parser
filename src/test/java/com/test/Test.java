@@ -24,7 +24,7 @@ public class Test {
 
     public static void main(String[] args) throws JSQLParserException {
         //test2();
-        test4();
+        test5();
     }
 
     public static void test1() throws JSQLParserException {
@@ -175,7 +175,23 @@ public class Test {
     }
 
     public static void test5() throws JSQLParserException {
-        //   Select select = (Select) CCJSqlParserUtil.parse("select * from a where 1=1 and name='123' and 1=1 or 1=1 ; ");
+        //需要解析的SQL语句
+        String sql = "select * from user where id=${id} and name='${name}' " +
+                "and age=${age} and address like ${address} and sex in (${sex}) ";
+
+        List<String> sexList=new ArrayList<>();
+        sexList.add("男");
+
+        //参数列表
+        Map<String, Object> params = new HashMap<>();
+        params.put("name", "Myron");
+        params.put("age", "12");
+        params.put("sex",sexList);
+
+        JdbcTemplateQueryParams jdbcTemplateQueryParams = SQLUtil.sqlToNamedParameterJdbcTemplateQuery(sql, params);
+
+        System.out.println("解析前SQL:"+sql);
+        System.out.println("解析后SQL:"+jdbcTemplateQueryParams.getSql());
     }
 
     public static void test6() throws JSQLParserException {

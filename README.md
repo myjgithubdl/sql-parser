@@ -102,3 +102,48 @@ System.out.println("解析后SQL:"+jdbcTemplateQueryParams.getSql());
 
 
 ![表达式列表](https://raw.githubusercontent.com/myjgithubdl/sql-parser/master/docs/assets/imgs/extend-ExpressionDeParser-result.png)
+
+
+
+# 三、替换为Spring NamedParameterJdbcTemplate SQL
+
+下面就根据SQL语句select * from user where id=${id} and name='${name}' and age=${age} and address like ${address} and sex in (${sex})做介绍。
+
+## 1、替换查询条件为字符串
+
+如上面的SQL语句中的条件id=${id} 如果在SQL编译器看来${id}是数值，需要将其转化为'${id}'。然后在使用CCJSqlParserUtil.parse(addSingleQuoteSql)解析SQL语句。
+
+## 2、解析SQL表达式
+
+​	在使用正则对SQL中的参数做单引号处理以后，再用CCJSqlParserUtil解析出SQL中的表达式，同时对查询语句中的字符串(''标识的条件)做处理，检查如果是查询参数则判断是否有改参数的值，如果有则使用 :参数名 代替，没有值的话则打上一个没有值的标记，后期会把该条件清除。
+
+​	需要解析SQL语句中的字符串内容则要继承ExpressionDeParser类并重写其中的visit(StringValue stringValue)方法。
+
+## 3、表达式替换
+
+​	根据替换后的SQL中被标记没有值的查询条件删除。
+
+
+
+## 使用方法	
+
+```java
+//需要解析的SQL语句
+String sql = "select * from user where id=${id} and name='${name}' and age=${age} and address like ${address} and sex in (${sex}) ";
+
+List<String> sexList=new ArrayList<>();
+sexList.add("男");
+
+//参数列表
+Map<String, Object> params = new HashMap<>();
+params.put("name", "Myron");
+params.put("age", "12");
+params.put("sex",sexList);
+
+JdbcTemplateQueryParams jdbcTemplateQueryParams = SQLUtil.sqlToNamedParameterJdbcTemplateQuery(sql, params);
+
+System.out.println("解析前SQL:"+sql);
+System.out.println("解析后SQL:"+jdbcTemplateQueryParams.getSql());
+```
+
+![表达式列表](https://raw.githubusercontent.com/myjgithubdl/sql-parser/master/docs/assets/imgs/extend-ExpressionDeParser2.png)
