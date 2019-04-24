@@ -1,6 +1,7 @@
 package com.sql.parser;
 
-import com.sql.constant.SQLConstant;
+import com.sql.constant.Constant;
+import com.sql.entity.ParamExp;
 import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.util.deparser.ExpressionDeParser;
 
@@ -12,6 +13,11 @@ import java.util.Map;
  * 替换参数到指定的标记
  */
 public class ReplaceParamToMark extends ExpressionDeParser {
+
+    /**
+     * SQL中所有的参数  {@link ParamExp }
+     */
+    List<ParamExp> paramExpList;
 
     /**
      * 解析出的参数列表
@@ -28,16 +34,12 @@ public class ReplaceParamToMark extends ExpressionDeParser {
      */
     private String mark = " ? ";
 
-
     public ReplaceParamToMark() {
     }
 
-    public ReplaceParamToMark(String mark) {
+    public ReplaceParamToMark(String mark, List<ParamExp> paramExpList, Map<String, Object> paramsValueMap) {
         this.mark = mark;
-    }
-
-    public ReplaceParamToMark(String mark,Map<String, Object> paramsValueMap) {
-        this.mark = mark;
+        this.paramExpList = paramExpList;
         this.paramsValueMap = paramsValueMap;
     }
 
@@ -60,56 +62,34 @@ public class ReplaceParamToMark extends ExpressionDeParser {
     @Override
     public void visit(StringValue stringValue) {
         String strValue = stringValue.toString();
-        boolean isParamEL = isParamEL(strValue);
+        if (paramExpList != null && paramExpList.size() > 0) {
+            String name = null;
+            Object value = null;
 
-        //值是参数
-        if (isParamEL) {
-            String paramName = getParamName(strValue);
-            //有参数值
-            if (paramsValueMap != null && paramsValueMap.get(paramName) != null) {
-                //设置了替换为的标记
-                if (this.mark != null) {
-                    this.getBuffer().append(this.mark);
-                    this.paramList.add(paramName);
-                } else {
-                    String mapValue = paramsValueMap.get(paramName).toString();
-                    this.getBuffer().append(strValue.replace(strValue, mapValue));
+            for (ParamExp paramExp : paramExpList) {
+                if (strValue.equals(paramExp.getExp())) {
+                    name = paramExp.getName();
+                    value = paramsValueMap.get(name);
+
+                    if (value != null && paramExp.getExp().contains("%") && paramExp.getExp().contains("${")) {//处理like查询
+                        value = paramExp.getExp().replace("'", "").replace("${" + name + "}", value.toString());
+                        paramsValueMap.put(name, value);
+                    }
+                    break;
                 }
+            }
+
+            if (name != null && value != null) {
+                //设置了替换为的标记
+                this.getBuffer().append(" " + this.mark);
+                this.paramList.add(name);
+
             } else {
-                this.getBuffer().append(SQLConstant.PARAMS_NO_VALUE_FLAG);
+                this.getBuffer().append(Constant.PARAMS_NO_VALUE_FLAG);
             }
         } else {
-            this.getBuffer().append(stringValue);
+            this.getBuffer().append(Constant.PARAMS_NO_VALUE_FLAG);
         }
     }
-
-    /**
-     * @return
-     */
-    public static boolean isParamEL(String sqlVal) {
-        if ((sqlVal.startsWith("${") || sqlVal.startsWith("'${")
-                || sqlVal.startsWith("#{") || sqlVal.startsWith("'#{"))
-                && (sqlVal.endsWith("}") || sqlVal.endsWith("}'"))) {
-            return true;
-        }
-        return false;
-    }
-
-    public static String getParamName(String param) {
-        return param.replaceAll("'", "")
-                .replaceAll("#", "")
-                .replace("$", "").replace("{", "").replace("}", "");
-
-    }
-
-    public static String getParamEL(String sqlVal) {
-        if ((sqlVal.startsWith("${") || sqlVal.startsWith("'${")
-                || sqlVal.startsWith("#{") || sqlVal.startsWith("'#{"))
-                && sqlVal.endsWith("}")) {
-            return sqlVal.replaceAll("'", "");
-        }
-        return null;
-    }
-
 
 }

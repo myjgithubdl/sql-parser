@@ -1,11 +1,9 @@
 package com.sql.util;
 
-import com.sql.constant.SQLConstant;
+import com.sql.constant.Constant;
+import com.sql.entity.ParamExp;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -19,39 +17,39 @@ public class ParamsUtil {
      * 查找str值中指定字符串开头和结尾的所有内容
      *
      * @param str
-     * @param isContainRegExp：是否包含正则表达式匹配开始和结束字符内容
-     * @param isDistinct 是否去重
+     * @param regParamsPattern 参数的正则表达式
+     * @param isDistinct       是否去重
      * @return
      */
-    public static List<String> findAllParams(String str, boolean isContainRegExp , boolean isDistinct) {
+    public static List<ParamExp> findAllParams(String str, String[] regParamsPattern, boolean isDistinct) {
         if (str == null) {
             return null;
         }
 
-        List<String> params = new ArrayList<>();
-        for (String s : SQLConstant.REG_PARAMS_PATTERN) {
+        List<ParamExp> paramExpList = new ArrayList<>();
+
+        Set<String> paramNameSet = new LinkedHashSet<>();
+        for (String s : regParamsPattern) {
             Pattern pattern = Pattern.compile(s, Pattern.DOTALL);
             Matcher matcher = pattern.matcher(str);
             while (matcher.find()) {
-                String val=null;
-                if (isContainRegExp) {//包涵正则表达式
-                    String regVal = str.substring(matcher.start(), matcher.end());
-                    //params.add(regVal);
-                    val=regVal;
-                } else {
-                    //params.add(matcher.group(1));
-                    val=matcher.group(1);
-                }
 
-                if(isDistinct && params.indexOf(val) < 0){
-                    params.add(val);
-                }else{
-                    params.add(val);
+                String exp = str.substring(matcher.start(), matcher.end());
+                String name = exp.substring(exp.indexOf("{")+1,exp.indexOf("}"));
+
+                if (isDistinct && paramNameSet.contains(name)) {
+                    continue;
                 }
+                paramNameSet.add(name);
+
+
+                ParamExp paramExp = ParamExp.builder().name(name).exp(exp).build();
+                paramExpList.add(paramExp);
             }
         }
-        if (params.size() > 0) {
-            return params;
+
+        if (paramExpList.size() > 0) {
+            return paramExpList;
         }
         return null;
     }
@@ -61,21 +59,23 @@ public class ParamsUtil {
      * 根据参数paramsValueMap替换str中的参数值
      *
      * @param str
+     * @param regParamsPattern 参数的正则表达式
      * @param paramsValueMap
-     * @param noValReplaceStr 在paramsValueMap中没有str中的参数对应的值的代替字符
+     * @param noValReplaceStr  在paramsValueMap中没有str中的参数对应的值的代替字符
      * @return
      */
-    public static String replaceAllParams(String str, Map<String, Object> paramsValueMap, String noValReplaceStr) {
+    public static String replaceAllParams(String str, String[] regParamsPattern, Map<String, Object> paramsValueMap, String noValReplaceStr) {
         if (str == null) {
             return null;
         }
-        List<String> allParamsExp = findAllParams(str, true,false);
-        if (allParamsExp != null) {
+        List<ParamExp> paramExpList = findAllParams(str, regParamsPattern, true);
+        if (paramExpList != null && paramExpList.size() >0) {
             if (paramsValueMap == null) {
                 paramsValueMap = new HashMap<>();
             }
-            for (String paramsExp : allParamsExp) {
-                String paramsName = paramsExp.substring(2, paramsExp.length() - 1);
+            for (ParamExp paramExp : paramExpList) {
+                String paramsName =paramExp.getName();
+                String paramsExp="${"+paramsName+"}";
                 Object v = paramsValueMap.get(paramsName);
                 if (v != null) {
                     str = str.replace(paramsExp, String.valueOf(v));
@@ -92,15 +92,15 @@ public class ParamsUtil {
 
     public static void main(String[] args) {
 
-        String s = "https://www.baidu.com/s?wd='${name}'&rsv_spt=#{id}${1234}#{ttt}'";
+        String s = "https://www.baidu.com/s?wd='${name}'&rsv_spt=${id}${1234}${ttt}'";
         Map<String, Object> params = new HashMap<>();
         params.put("name", "缪应江");
         params.put("id", "1098");
         params.put("1234", "AA");
         params.put("ttt", "BB");
 
-        List<String> list = findAllParams(s, true,false);
-        String v = replaceAllParams(s, params, "");
+        List<ParamExp> list = findAllParams(s, Constant.REG_PARAMS_PATTERN, false);
+        String v = replaceAllParams(s, Constant.REG_PARAMS_PATTERN, params, "");
         System.out.println(list);
         System.out.println(v);
     }

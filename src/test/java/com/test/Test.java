@@ -1,6 +1,6 @@
 package com.test;
 
-import com.sql.constant.SQLConstant;
+import com.sql.constant.Constant;
 import com.sql.entity.JdbcTemplateQueryParams;
 import com.sql.util.ParamsUtil;
 import com.sql.util.SQLUtil;
@@ -13,10 +13,9 @@ import net.sf.jsqlparser.statement.select.Select;
 import net.sf.jsqlparser.util.deparser.ExpressionDeParser;
 import net.sf.jsqlparser.util.deparser.SelectDeParser;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 public class Test {
@@ -24,7 +23,7 @@ public class Test {
 
     public static void main(String[] args) throws JSQLParserException {
         //test2();
-        test5();
+        test6();
     }
 
     public static void test1() throws JSQLParserException {
@@ -111,7 +110,7 @@ public class Test {
         //解析SQL
         String realSql = SQLUtil.replaceSQLParams(sql, params);
         System.out.println("原SQL：        " + sql);
-        System.out.println("正则替换参数SQL：" + ParamsUtil.replaceAllParams(sql, params, SQLConstant.PARAMS_NO_VALUE_FLAG));
+        System.out.println("正则替换参数SQL：" + ParamsUtil.replaceAllParams(sql,Constant.SQL_MARK_REG_PARAMS_PATTERN, params, Constant.PARAMS_NO_VALUE_FLAG));
         System.out.println("解析后SQL：     " + realSql);
 
 
@@ -197,22 +196,65 @@ public class Test {
     public static void test6() throws JSQLParserException {
 
         //需要解析的SQL语句
-        String sql = "select * from user where id=${id} and name='${name}' and age=${age} and address like ${address}  and age in (${inAge})";
+        String sql = "select * from user where id=${id} and name='${name}' and age=${age} and address like '${addrLike}%'  and age in (${inAge}) ";
         //参数列表
         Map<String, Object> params = new HashMap<>();
         params.put("name", "Myron");
         params.put("age", "12");
+        params.put("addrLike", "GZ");
 
         List<String> inAge = new ArrayList<>();
         inAge.add("1");
         inAge.add("2");
         params.put("inAge", inAge);
 
-        SQLUtil.sqlToJdbcTemplateQuery(sql, params);
-        JdbcTemplateQueryParams jdbcTemplateQueryParams = SQLUtil.sqlToNamedParameterJdbcTemplateQuery(sql, params);
 
-        System.out.println(sql);
-        System.out.println(jdbcTemplateQueryParams.getSql());
+        //JdbcTemplateQueryParams jdbcTemplateQueryParams = SQLUtil.sqlToJdbcTemplateQuery(sql, params);
+        JdbcTemplateQueryParams jdbcTemplateQueryParams = SQLUtil.sqlToNamedParameterJdbcTemplateQuery(sql, params);
+        System.out.println("原始SQL:"+sql);
+        System.out.println("解析SQL:"+jdbcTemplateQueryParams.getSql());
+        System.out.println("参数："+params);
+        if(jdbcTemplateQueryParams.getArgNames() != null && jdbcTemplateQueryParams.getArgNames().length >0){
+            System.out.println("argNames:");
+            Arrays.asList(jdbcTemplateQueryParams.getArgNames()).stream().forEach(a -> System.out.println("\t"+a));
+
+            System.out.println("argValues:");
+            Arrays.asList(jdbcTemplateQueryParams.getArgValues()).stream().forEach(a -> System.out.println("\t"+a));
+
+        }
 
     }
+
+
+    public static void test7(){
+
+        String str="select * from tb where id=${id} and name like '${nameLike}%' ";
+        boolean isContainRegExp =true;
+        boolean isDistinct=false;
+        List<String> params = new ArrayList<>();
+        for (String s :Constant.SQL_MARK_REG_PARAMS_PATTERN) {
+            Pattern pattern = Pattern.compile(s, Pattern.DOTALL);
+            Matcher matcher = pattern.matcher(str);
+            while (matcher.find()) {
+                String val=null;
+                if (isContainRegExp) {//包涵正则表达式
+                    String regVal = str.substring(matcher.start(), matcher.end());
+                    //params.add(regVal);
+                    val=regVal;
+                } else {
+                    //params.add(matcher.group(1));
+                    val=matcher.group(1);
+                }
+
+                if(isDistinct && params.indexOf(val) < 0){
+                    params.add(val);
+                }else{
+                    params.add(val);
+                }
+            }
+        }
+
+        System.out.println(params);
+    }
+
 }

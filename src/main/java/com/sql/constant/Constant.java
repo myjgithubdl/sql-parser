@@ -3,19 +3,19 @@ package com.sql.constant;
 import java.util.HashMap;
 import java.util.Map;
 
-public class SQLConstant {
+public class Constant {
 
     /**
      * SQL 参数匹配标志
      * 如下SQL语句参数为userId和name
      * SELECT * FROM tb WHERE userId=${userId} and name=${name}
      */
-    public static final String[] REG_PARAMS_PATTERN = {"\\$\\{(.*?)\\}", "\\#\\{(.*?)\\}"};
+    public static final String[] REG_PARAMS_PATTERN = {"\\$\\{(.*?)\\}"};
 
     /**
      * 顺序需与上面的保持一致，只是加了一个单引号
      */
-    public static final String[] SINGLE_QUOTE_MARK_REG_PARAMS_PATTERN = {"'\\$\\{(.*?)\\}'", "'\\#\\{(.*?)\\}'"};
+    public static final String[] SQL_MARK_REG_PARAMS_PATTERN = {"('?)(%?)\\$\\{(.*?)\\}(%?)('?)"};
 
 
     /**

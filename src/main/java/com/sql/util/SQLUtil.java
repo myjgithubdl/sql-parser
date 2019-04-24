@@ -1,7 +1,8 @@
 package com.sql.util;
 
-import com.sql.constant.SQLConstant;
+import com.sql.constant.Constant;
 import com.sql.entity.JdbcTemplateQueryParams;
+import com.sql.entity.ParamExp;
 import com.sql.parser.ReplaceParamToMark;
 import com.sql.parser.ReplaceParamToNamedParam;
 import com.sql.parser.SqlParser;
@@ -11,9 +12,7 @@ import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.util.deparser.SelectDeParser;
 import net.sf.jsqlparser.util.deparser.StatementDeParser;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 解析SQL工具类
@@ -27,7 +26,7 @@ public class SQLUtil {
         }
 
         //使用正则表达式替换参数
-        String sqlEp = ParamsUtil.replaceAllParams(sql, paramsValueMap, SQLConstant.PARAMS_NO_VALUE_FLAG);
+        String sqlEp = ParamsUtil.replaceAllParams(sql, Constant.SQL_MARK_REG_PARAMS_PATTERN, paramsValueMap, Constant.PARAMS_NO_VALUE_FLAG);
         //处理SQL
         String finalSQL = SqlParser.deleteEmptyValueCondition(sqlEp);
 
@@ -52,21 +51,20 @@ public class SQLUtil {
      * @return
      */
     public static String addSQLParamsSingleQuoteMark(String sql) {
-        List<String> list = ParamsUtil.findAllParams(sql, true, false);
-        if (list != null) {
-            for (String param : list) {
-                String noSingleQuoteMark = "";
-                String singleQuoteMark = "";
-                if (param.startsWith("${")) {
-                    noSingleQuoteMark = "\\$\\{" + param.substring(2, param.length() - 1) + "\\}";
-                    singleQuoteMark = "'\\$\\{" + param.substring(2, param.length() - 1) + "\\}'";
+        List<ParamExp> list = ParamsUtil.findAllParams(sql, Constant.SQL_MARK_REG_PARAMS_PATTERN, false);
+        if (list != null && list.size() > 0) {
+            for (ParamExp paramExp : list) {
+                if (!paramExp.getExp().startsWith("'")) {
+                    String noSingleQuoteMark = "";//不带单引号
+                    String singleQuoteMark = "";//带单引号
+
+                    noSingleQuoteMark = "\\$\\{" + paramExp.getName() + "\\}";
+                    singleQuoteMark = "'\\$\\{" + paramExp.getName() + "\\}'";
+
+
+                    //先将带单引号的改为无单引号，再将其该我带单引号的，不能直接改是因为带单引号的会出现两个单引号
+                    sql = sql.replaceAll(singleQuoteMark, noSingleQuoteMark).replaceAll(noSingleQuoteMark, singleQuoteMark);
                 }
-                if (param.startsWith("#{")) {
-                    noSingleQuoteMark = "\\#\\{" + param.substring(2, param.length() - 1) + "\\}";
-                    singleQuoteMark = "'\\#\\{" + param.substring(2, param.length() - 1) + "\\}'";
-                }
-                //先将带单引号的改为无单引号，再将其该我带单引号的，不能直接改是因为带单引号的会出现两个单引号
-                sql = sql.replaceAll(singleQuoteMark, noSingleQuoteMark).replaceAll(noSingleQuoteMark, singleQuoteMark);
             }
         }
 
@@ -83,31 +81,27 @@ public class SQLUtil {
      * @throws JSQLParserException
      */
     public static JdbcTemplateQueryParams sqlToJdbcTemplateQuery(String sql, Map<String, Object> paramsValueMap) throws JSQLParserException {
-        JdbcTemplateQueryParams jdbcTemplateQueryParams = new JdbcTemplateQueryParams();
+        String addSingleQuoteSql = addSQLParamsSingleQuoteMark(sql);
+        List<ParamExp> sqlAllParams = ParamsUtil.findAllParams(addSingleQuoteSql, Constant.SQL_MARK_REG_PARAMS_PATTERN, false);
+
 
         StringBuilder buffer = new StringBuilder();
-        ReplaceParamToMark replaceParamToMark = new ReplaceParamToMark(" ? ", paramsValueMap);
-
+        ReplaceParamToMark replaceParamToMark = new ReplaceParamToMark(" ? ", sqlAllParams, paramsValueMap);
 
         SelectDeParser selectDeparser = new SelectDeParser(replaceParamToMark, buffer);
         replaceParamToMark.setSelectVisitor(selectDeparser);
         replaceParamToMark.setBuffer(buffer);
         StatementDeParser stmtDeparser = new StatementDeParser(replaceParamToMark, selectDeparser, buffer);
 
-
-        String addSingleQuoteSql = addSQLParamsSingleQuoteMark(sql);
         Statement stmt = CCJSqlParserUtil.parse(addSingleQuoteSql);
         stmt.accept(stmtDeparser);
 
         String markSql = stmtDeparser.getBuffer().toString();
         String finalSQL = SqlParser.deleteEmptyValueCondition(markSql);
 
-        if (replaceParamToMark.getParamList() != null) {
-            String[] strings = new String[replaceParamToMark.getParamList().size()];
-            jdbcTemplateQueryParams.setArgNames(replaceParamToMark.getParamList().toArray(strings));
-        }
-        jdbcTemplateQueryParams.setOriginalSql(sql);
-        jdbcTemplateQueryParams.setSql(finalSQL);
+        JdbcTemplateQueryParams jdbcTemplateQueryParams = JdbcTemplateQueryParams.builder().paramExpList(sqlAllParams).originalSql(sql).sql(finalSQL).build();
+        setAndValuesByArgNames(replaceParamToMark.getParamList(), paramsValueMap, jdbcTemplateQueryParams);
+
         return jdbcTemplateQueryParams;
 
     }
@@ -130,33 +124,42 @@ public class SQLUtil {
      * @throws JSQLParserException
      */
     public static JdbcTemplateQueryParams sqlToNamedParameterJdbcTemplateQuery(String sql, Map<String, Object> paramsValueMap) throws JSQLParserException {
-        JdbcTemplateQueryParams jdbcTemplateQueryParams = new JdbcTemplateQueryParams();
+        String addSingleQuoteSql = addSQLParamsSingleQuoteMark(sql);
+        List<ParamExp> sqlAllParams = ParamsUtil.findAllParams(addSingleQuoteSql, Constant.SQL_MARK_REG_PARAMS_PATTERN, false);
 
         StringBuilder buffer = new StringBuilder();
-        ReplaceParamToNamedParam replaceParamToNamedParam = new ReplaceParamToNamedParam(paramsValueMap);
-
+        ReplaceParamToNamedParam replaceParamToNamedParam = new ReplaceParamToNamedParam(sqlAllParams, paramsValueMap);
 
         SelectDeParser selectDeparser = new SelectDeParser(replaceParamToNamedParam, buffer);
         replaceParamToNamedParam.setSelectVisitor(selectDeparser);
         replaceParamToNamedParam.setBuffer(buffer);
         StatementDeParser stmtDeparser = new StatementDeParser(replaceParamToNamedParam, selectDeparser, buffer);
 
-
-        String addSingleQuoteSql = addSQLParamsSingleQuoteMark(sql);
         Statement stmt = CCJSqlParserUtil.parse(addSingleQuoteSql);
         stmt.accept(stmtDeparser);
 
         String markSql = stmtDeparser.getBuffer().toString();
         String finalSQL = SqlParser.deleteEmptyValueCondition(markSql);
 
-        if (replaceParamToNamedParam.getParamList() != null) {
-            String[] strings = new String[replaceParamToNamedParam.getParamList().size()];
-            jdbcTemplateQueryParams.setArgNames(replaceParamToNamedParam.getParamList().toArray(strings));
-        }
-        jdbcTemplateQueryParams.setOriginalSql(sql);
-        jdbcTemplateQueryParams.setSql(finalSQL);
-        return jdbcTemplateQueryParams;
+        JdbcTemplateQueryParams jdbcTemplateQueryParams = JdbcTemplateQueryParams.builder().paramExpList(sqlAllParams).originalSql(sql).sql(finalSQL).build();
+        setAndValuesByArgNames(replaceParamToNamedParam.getParamList(), paramsValueMap, jdbcTemplateQueryParams);
 
+        return jdbcTemplateQueryParams;
+    }
+
+    private static void setAndValuesByArgNames(List<String> paramNameList, Map<String, Object> paramsValueMap,
+                                               JdbcTemplateQueryParams jdbcTemplateQueryParams) {
+        if (paramNameList != null && paramNameList.size() > 0) {
+            String[] strings = new String[paramNameList.size()];
+            jdbcTemplateQueryParams.setArgNames(paramNameList.toArray(strings));
+
+            List<Object> argValueList = new ArrayList<>(paramNameList.size());
+            for (int i = 0; i < paramNameList.size(); i++) {
+                argValueList.add(paramsValueMap.get(paramNameList.get(i)));
+            }
+
+            jdbcTemplateQueryParams.setArgValues(argValueList.toArray());
+        }
     }
 
 

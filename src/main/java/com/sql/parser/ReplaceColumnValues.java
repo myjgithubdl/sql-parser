@@ -1,6 +1,6 @@
 package com.sql.parser;
 
-import com.sql.constant.SQLConstant;
+import com.sql.constant.Constant;
 import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.util.deparser.ExpressionDeParser;
 
@@ -25,7 +25,7 @@ public class ReplaceColumnValues extends ExpressionDeParser {
                 String mapValue = paramsValueMap.get(paramEL.substring(1, paramEL.length() - 1)).toString();
                 this.getBuffer().append(strValue.replace(paramEL, mapValue));
             } else {
-                this.getBuffer().append(SQLConstant.PARAMS_NO_VALUE_FLAG);
+                this.getBuffer().append(Constant.PARAMS_NO_VALUE_FLAG);
             }
         }
     }

@@ -1,11 +1,20 @@
 package com.sql.entity;
 
+import lombok.*;
+
+import java.util.List;
+
 /**
  * 封装Spring JdbcTemplate 查询参数
  * 该方式的问题在于不能解决in查询问题
  *
  * @since 0.0.1
  */
+@Builder
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class JdbcTemplateQueryParams {
 
     /**
@@ -41,55 +50,9 @@ public class JdbcTemplateQueryParams {
      */
     private int[] argTypes;
 
+    /**
+     * SQL中的表达解析出的所有有参数表达式
+     */
+    private List<ParamExp> paramExpList;
 
-    public JdbcTemplateQueryParams() {
-    }
-
-    public JdbcTemplateQueryParams(String originalSql, String sql, String[] argNames, Object[] argValues, int[] argTypes) {
-        this.originalSql = originalSql;
-        this.sql = sql;
-        this.argNames = argNames;
-        this.argValues = argValues;
-        this.argTypes = argTypes;
-    }
-
-    public String getOriginalSql() {
-        return originalSql;
-    }
-
-    public void setOriginalSql(String originalSql) {
-        this.originalSql = originalSql;
-    }
-
-    public String getSql() {
-        return sql;
-    }
-
-    public void setSql(String sql) {
-        this.sql = sql;
-    }
-
-    public String[] getArgNames() {
-        return argNames;
-    }
-
-    public void setArgNames(String[] argNames) {
-        this.argNames = argNames;
-    }
-
-    public int[] getArgTypes() {
-        return argTypes;
-    }
-
-    public void setArgTypes(int[] argTypes) {
-        this.argTypes = argTypes;
-    }
-
-    public Object[] getArgValues() {
-        return argValues;
-    }
-
-    public void setArgValues(Object[] argValues) {
-        this.argValues = argValues;
-    }
 }
