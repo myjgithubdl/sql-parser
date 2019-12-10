@@ -126,7 +126,7 @@ public class SQLUtil {
     public static JdbcTemplateQueryParams sqlToNamedParameterJdbcTemplateQuery(String sql, Map<String, Object> paramsValueMap) throws JSQLParserException {
         String addSingleQuoteSql = addSQLParamsSingleQuoteMark(sql);
         List<ParamExp> sqlAllParams = ParamsUtil.findAllParams(addSingleQuoteSql, Constant.SQL_MARK_REG_PARAMS_PATTERN, false);
-
+        System.out.println("所有参数："+sqlAllParams);
         StringBuilder buffer = new StringBuilder();
         ReplaceParamToNamedParam replaceParamToNamedParam = new ReplaceParamToNamedParam(sqlAllParams, paramsValueMap);
 

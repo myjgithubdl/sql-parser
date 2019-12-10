@@ -57,7 +57,6 @@ public class ReplaceParamToNamedParam extends ExpressionDeParser {
     @Override
     public void visit(StringValue stringValue) {
         String strValue = stringValue.toString();
-
         if (paramExpList != null && paramExpList.size() > 0) {
             String name = null;
             Object value = null;
@@ -67,26 +66,30 @@ public class ReplaceParamToNamedParam extends ExpressionDeParser {
                     name = paramExp.getName();
                     value = paramsValueMap.get(name);
 
-                    if (value != null && paramExp.getExp().contains("%") && paramExp.getExp().contains("${")) {//处理like查询
+                    //处理like查询
+                    if (value != null && paramExp.getExp().contains("%") && paramExp.getExp().contains("${")) {
                         value = paramExp.getExp().replace("'", "").replace("${" + name + "}", value.toString());
                         paramsValueMap.put(name, value);
                     }
                     break;
                 }
             }
-
-            if (name != null && value != null) {
-                //设置了替换为的标记
-                this.getBuffer().append(" :" + name);
-                this.paramList.add(name);
-
+            if (name != null) {
+                if (value != null) {
+                    //设置了替换为的标记
+                    this.getBuffer().append(" :" + name);
+                    this.paramList.add(name);
+                }else{
+                    this.getBuffer().append(Constant.PARAMS_NO_VALUE_FLAG);
+                }
             } else {
-                this.getBuffer().append(Constant.PARAMS_NO_VALUE_FLAG);
+                //this.getBuffer().append(Constant.PARAMS_NO_VALUE_FLAG);
+                this.getBuffer().append(stringValue);
             }
         } else {
-            this.getBuffer().append(Constant.PARAMS_NO_VALUE_FLAG);
+            //this.getBuffer().append(Constant.PARAMS_NO_VALUE_FLAG);
+            this.getBuffer().append(stringValue);
         }
-
     }
 
 
